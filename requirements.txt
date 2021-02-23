@@ -4,7 +4,6 @@ pandas
 netCDF4
 xarray
 scipy
-wrf-python
 jsonschema
 simplejson
 PyYAML
@@ -12,3 +11,5 @@ rasterio
 numexpr
 numba
 matplotlib
+seaborn
+dataframe_image
