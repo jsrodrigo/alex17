@@ -5,20 +5,11 @@ import rasterio as rio
 from pathlib import Path
 import matplotlib.pyplot as plt
 from pandas import IndexSlice as idx
-import dataframe_image as dfi
-import seaborn as sns
-from lib.alex17_functions2 import vector_WD_stats, vector_WD_diff
+from lib.common_functions import vector_WD_stats, vector_WD_diff
 
 def saveFigureFunction(saveFigures, fig_handle, figureOutFile, dpiFig=100):
     if saveFigures:
         fig_handle.savefig(figureOutFile, bbox_inches='tight', format='png', dpi=dpiFig)
-
-def save_dftable(saveTables, df, outputpath, filename, png=True):
-    if saveTables:
-        dfstyle = df.style.background_gradient()     # set the stlyle / color of the table
-        df.to_csv(outputpath / (filename +'.csv'))
-        if png:
-            dfstyle.export_png( str(outputpath / (filename +'.png') ) )
 
 def shade_events_and_labels(ax, events, vars2plot_ts, datefrom, dateto):
     fz = 8 # fontsize of vertical-axis labels
@@ -45,18 +36,6 @@ def _ds2da(ds, var, mast, h):
         return ds[var].sel(id=mast).interp(height=10)
     else:
         return ds[var].sel(id=mast).interp(height=h)
-
-def get_errors(masts_obs, masts_sim):
-    bias, mae = {}, {}
-    for i_sim in masts_sim:
-        sim = masts_sim[i_sim].interp(height=masts_obs.height, time=masts_obs.time )
-        # bias so far defined as observations - simualations
-        bias[i_sim] = masts_obs - sim
-        # overwrite wind direction difference to consider it as a vector diference
-        bias[i_sim]['wind_direction'] = vector_WD_diff(sim['wind_direction'] , masts_obs['wind_direction'])
-        # mean absolute error
-        mae[i_sim] = np.abs(bias[i_sim])
-    return bias, mae
 
 
 #%% --------------- PLOTS --------------------------------------
