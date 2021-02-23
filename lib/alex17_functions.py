@@ -18,13 +18,20 @@ def read_sim(filename):
         M = xr.open_dataset(filename)
         print(filename)
         try: 
+            M = M.resample(time = "1H").mean() # Resample to hourly data
             U = M.eastward_wind
             V = M.northward_wind
             S = (U**2 + V**2)**0.5
-            WD = (270-np.rad2deg(np.arctan2(V,U)))%360
+            WD = 180 + np.arctan2(U, V) * 180/np.pi
             M = M.assign(wind_speed = S, wind_direction = WD)
+            if 'simID' in list(M.coords.keys()):
+                M = M.drop('simID')
         except AttributeError:
-            print('No U and V fields found')
+            M = M.assign(eastward_wind = -M.wind_speed*np.sin(M.wind_direction*np.pi/180))
+            M = M.assign(northward_wind = -M.wind_speed*np.cos(M.wind_direction*np.pi/180))
+            M = M.resample(time = "1H").mean() # Resample to hourly data
+            WDmean = 180 + np.arctan2(M.eastward_wind, M.northward_wind) * 180/np.pi 
+            M = M.assign(wind_direction = WDmean)
     except IOError:
         M = np.nan
         print(filename + ' is missing')
@@ -38,6 +45,11 @@ def read_obs(filename):
     M = M.rename({'specific_turbulent_kinetic_energy': 'turbulent_kinetic_energy'})
     M = M.rename({'specific_upward_sensible_heat_flux_in_air': 'heat_flux'})
     M = M.interpolate_na(dim='height') # Fill nans with interpolated values between observational levels
+    M = M.assign(eastward_wind = -M.wind_speed*np.sin(M.wind_direction*np.pi/180))
+    M = M.assign(northward_wind = -M.wind_speed*np.cos(M.wind_direction*np.pi/180))
+    M = M.resample(time = "1H").mean() # Resample to hourly data
+    WDmean = 180 + np.arctan2(M.eastward_wind, M.northward_wind) * 180/np.pi # calculate wind direction from U,V components after resampling 
+    M = M.assign(wind_direction = WDmean)    
     return M
 
 def vector_mean_std_wind_direction(WD):
@@ -151,7 +163,69 @@ def WDzL_bins(x,y,ts,statistic,bins,bins_label,plot = False):
             #                      loc='bottom')
 
         return N_WDzL, binmap
-                
+
+def dataset_binavrg(dataset,binmap,bins_label):
+    dims = ['id','height','wd','zL']
+    labels = [dataset.id.values] + [dataset.height.values] + bins_label
+    variables = list(dataset.keys())
+
+    Nbin = [len(dim) for dim in labels]
+    dd = dict.fromkeys(dims, None)
+    for d in range(len(dims)):
+        dd[dims[d]] = labels[d]
+
+    Nwd, NzL = [len(dim) for dim in bins_label]
+    meandata = np.empty([len(variables)] + Nbin)*np.nan
+    for i_wd in range(Nwd):
+        for i_zL in range(NzL):
+            meandata[:,:,:,i_wd,i_zL] = dataset.sel(time = binmap[i_wd,i_zL]).mean(dim = 'time', skipna=True).to_array()
+
+    dv = dict((v,(dims,meandata[iv,:,:,:,:])) for iv,v in enumerate(variables))
+    xr_mean = xr.Dataset(data_vars = dv, coords = dd)  
+    
+    return xr_mean
+
+def xarray_init(dims,labels,variables):
+    """
+    Initialize xarray
+    Inputs: 
+        - dims: list with dimmension names
+        - labels: coordinates of each dimmension (bins labels)
+        - variables: list with variable names
+    outputs: 
+        - xr_init: empty xarray 
+    """
+    Nbin = [len(dim) for dim in labels]
+    dd = dict.fromkeys(dims, None)
+    dv = dict((v,(dims,np.empty(Nbin)*np.nan)) for v in variables)
+    for d in range(len(dims)):
+        dd[dims[d]] = labels[d]
+    xr_init = xr.Dataset(data_vars = dv, coords = dd)     
+    return xr_init
+    
+def bin_avrg(ts,binmap,bins_label):
+    """
+    Compute bin statistics
+    Inputs: 
+        - ts: time-series
+        - binmap: list of timestamp indices to samples in each bin (wd,zL)
+        - bins_label: list of lists of labels for each bin 
+    Outputs: 
+        - mean: bin-average
+        - std:  bin standard deviation
+    """
+    Nwd, NzL = [len(dim) for dim in bins_label]
+    WDbins_label, zLbins_label = bins_label
+    mean = xarray_init(['wd','zL'],bins_label)
+    std = xarray_init(['wd','zL'],bins_label)        
+    for i_wd in range(Nwd):
+        for i_zL in range(NzL):
+            ts_bin = ts.reindex(binmap[i_wd,i_zL])
+            mean[i_wd,i_zL] = ts_bin.mean().values[0]
+            std[i_wd,i_zL] = ts_bin.std().values[0]
+
+    return mean, std
+
 def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events):
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
     masts_obs.wind_speed.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax1)
