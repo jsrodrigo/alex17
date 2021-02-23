@@ -6,5 +6,10 @@ lib/__pycache__/
 inputs
 outputs
 observations
+output_figures
 
+__pycache__
+
+.ipynb_checkpoints
+.vscode
 .env
