@@ -75,28 +75,30 @@ def events_qois_vs_masts_table(events,masts_obs,height):
     # create the DataFrame
     df = pd.DataFrame(np.random.randn(len(events_name)*len(qois), len(masts_obs.id)*2), index=index, columns=columns)
     idx = pd.IndexSlice
+    
+    masts = masts_obs.id.values.tolist()
 
     for e in events_name:
         for q in qois:
-            for m in masts_obs.id.values.tolist():
+            for m in masts:
                 if q == 'wind_speed' or q == 'turbulence_intensity':
                     df.loc[idx[e, q], idx[m, 'mean']] = masts_obs[q].sel(id = m, height = height, 
-                                                                         time = slice(events[e][0],events[e][1])).mean()
+                                                                         time = slice(events[e][0],events[e][1])).mean(skipna = True)
                     df.loc[idx[e, q], idx[m, 'std']] = masts_obs[q].sel(id = m, height = height, 
-                                                                        time = slice(events[e][0],events[e][1])).std()
+                                                                        time = slice(events[e][0],events[e][1])).std(skipna = True)
                 elif q == 'wind_direction':
                     WD = masts_obs[q].sel(id = m, height = height, time = slice(events[e][0],events[e][1]))
                     df.loc[idx[e, q], idx[m, 'mean']], df.loc[idx[e, q], idx[m, 'std']] = vector_mean_std_wind_direction(WD)
                 elif q == 'wind_shear':
                     df.loc[idx[e, q], idx[m, 'mean']] = masts_obs[q].sel(id = m, 
-                                                                        time = slice(events[e][0],events[e][1])).mean()
+                                                                        time = slice(events[e][0],events[e][1])).mean(skipna = True)
                     df.loc[idx[e, q], idx[m, 'std']] = masts_obs[q].sel(id = m, 
-                                                                        time = slice(events[e][0],events[e][1])).std()
+                                                                        time = slice(events[e][0],events[e][1])).std(skipna = True)
                 elif q == 'stability':
                     df.loc[idx[e, q], idx[m, 'mean']] = masts_obs[q].sel(id = m, height = 10, 
-                                                                         time = slice(events[e][0],events[e][1])).mean()
+                                                                         time = slice(events[e][0],events[e][1])).mean(skipna = True)
                     df.loc[idx[e, q], idx[m, 'std']] = masts_obs[q].sel(id = m, height = 10, 
-                                                                        time = slice(events[e][0],events[e][1])).std()
+                                                                        time = slice(events[e][0],events[e][1])).std(skipna = True)
     return df 
 
 def WDzL_bins(x,y,ts,statistic,bins,bins_label,plot = False):
@@ -235,7 +237,7 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
                                                                                    color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
         masts_sim[i_sim].wind_shear.sel(id = mast).plot(x = 'time', label = sims['Label'][i_sim], ax = ax4,
                                                        color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
-    color_events = {'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
+    color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
     for e in events:
         ax1.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
         ax2.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
@@ -263,7 +265,7 @@ def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events):
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', hue = 'id', ax = ax4)
     masts_obs.stability.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax5)
     masts_obs.heat_flux.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax6)
-    color_events = {'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
+    color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
     for e in events:
         ax1.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
         ax2.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
@@ -291,14 +293,14 @@ def masts_sims_vs_obs_profiles_plot(event, masts_obs, masts_sim, sims):
         ax = axes[index]
         for i_sim in range (0,len(masts_sim)):
             h_sim = masts_sim[i_sim].wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = sims['Label'][i_sim], color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
-        h_obs = masts_obs.wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = 'obs',
-                                                        marker = 'o', linestyle='none', color = 'silver')
+        h_obs = masts_obs.wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = 'obs',marker = 'o', linestyle='none', markerfacecolor = 'silver', markeredgecolor = 'k')
         ax.set_ylabel(''); ax.set_xlabel(''); 
         ax.set_ylim(1,1000)
         ax.grid()
     plt.yscale('symlog')
     axes[(0,0)].set_ylabel('z [m]'); axes[(1,0)].set_ylabel('z [m]')
-    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
+    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); 
+    axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
     axes[(1,3)].axis('off')
     axes[(1,2)].legend(bbox_to_anchor=(1.13, 1))
     return axes
@@ -314,15 +316,17 @@ def masts_sims_vs_obs_binavrg_profiles_plot(select_bin, masts_obs_mean, masts_si
         for i_sim in range (0,len(masts_sim_mean)):
             h_sim = masts_sim_mean[i_sim].wind_speed.sel(id = mast, wd = wd_bin, zL = zL_bin).plot(y = 'height', ax = axes[index], 
                                                                                                    label = sims['Label'][i_sim],
-                                                                                                  color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
+                                                                                                  color=_l(0)[i_sim], ls=_l(1)[i_sim],
+                                                                                                   lw=_l(2)[i_sim], marker=_l(3)[i_sim])
         h_obs = masts_obs_mean.wind_speed.sel(id = mast, wd = wd_bin, zL = zL_bin).plot(y = 'height', ax = axes[index], label = 'obs',
-                                                        marker = 'o', linestyle='none', color = 'silver')
+                                                        marker = 'o', linestyle='none', markerfacecolor = 'silver', markeredgecolor = 'k')
         ax.set_ylabel(''); ax.set_xlabel(''); 
         ax.set_ylim(1,1000)
         ax.grid()
     plt.yscale('symlog')
     axes[(0,0)].set_ylabel('z [m]'); axes[(1,0)].set_ylabel('z [m]')
-    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
+    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); 
+    axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
     axes[(1,3)].axis('off')
     axes[(1,2)].legend(bbox_to_anchor=(1.13, 1))
     return axes
