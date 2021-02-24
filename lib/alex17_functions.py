@@ -19,11 +19,11 @@ def read_sim(filename):
         print(filename)
         try: 
             M = M.resample(time = "1H").mean() # Resample to hourly data
-            U = M.eastward_wind
-            V = M.northward_wind
-            S = (U**2 + V**2)**0.5
-            WD = 180 + np.arctan2(U, V) * 180/np.pi
-            M = M.assign(wind_speed = S, wind_direction = WD)
+            Umean = M.eastward_wind
+            Vmean = M.northward_wind
+            Smean = (Umean**2 + Vmean**2)**0.5
+            WDmean = 180 + np.arctan2(Umean, Vmean) * 180/np.pi
+            M = M.assign(wind_speed = Smean, wind_direction = WDmean)
             if 'simID' in list(M.coords.keys()):
                 M = M.drop('simID')
         except AttributeError:
@@ -202,43 +202,39 @@ def xarray_init(dims,labels,variables):
         dd[dims[d]] = labels[d]
     xr_init = xr.Dataset(data_vars = dv, coords = dd)     
     return xr_init
-    
-def bin_avrg(ts,binmap,bins_label):
-    """
-    Compute bin statistics
-    Inputs: 
-        - ts: time-series
-        - binmap: list of timestamp indices to samples in each bin (wd,zL)
-        - bins_label: list of lists of labels for each bin 
-    Outputs: 
-        - mean: bin-average
-        - std:  bin standard deviation
-    """
-    Nwd, NzL = [len(dim) for dim in bins_label]
-    WDbins_label, zLbins_label = bins_label
-    mean = xarray_init(['wd','zL'],bins_label)
-    std = xarray_init(['wd','zL'],bins_label)        
-    for i_wd in range(Nwd):
-        for i_zL in range(NzL):
-            ts_bin = ts.reindex(binmap[i_wd,i_zL])
-            mean[i_wd,i_zL] = ts_bin.mean().values[0]
-            std[i_wd,i_zL] = ts_bin.std().values[0]
 
-    return mean, std
+def _l(j):
+    # a relatively easy way to set line' specs for all the plots [color, style, width, marker]
+    lspecs = [['mediumvioletred', '#16A085', 'mediumblue','#D4AC0D','firebrick','#808B96','#5DADE2','C2','#A569BD',
+               '#641E16', '#A93226','#D98880','#ABB2B9','C0','C1','C3','C4','C5','C6','C7'],  #
+              ['-','--','-.','-',':','-','--',':','-.','-','-','-.','--',':','-','--',':','-.'],
+              [1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,2,2,1,1,2,2,1,1.1,1.3,1],
+              [None,'*',None,None,None,None,None,None,None,None,None,None,None,None,None,]
+              ]
+    return lspecs[j]
 
 def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events):
+    WD = masts_obs.wind_direction
+    WD = WD.where(WD < 180, WD - 360) # WD relative to North
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
     masts_obs.wind_speed.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax1)
-    masts_obs.wind_direction.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax2)
+    WD.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax2)
     masts_obs.turbulence_intensity.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax3)
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', label = 'obs', color = 'k', ax = ax4)
     masts_obs.stability.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax5)
     masts_obs.heat_flux.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax6)
     for i_sim in range (0,len(masts_sim)): 
-        masts_sim[i_sim].wind_speed.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax1)
-        masts_sim[i_sim].wind_direction.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax2)
-        masts_sim[i_sim].turbulence_intensity.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax3)
-        masts_sim[i_sim].wind_shear.sel(id = mast).plot(x = 'time', label = sims['Label'][i_sim], ax = ax4)
+        WD = masts_sim[i_sim].wind_direction
+        WD = WD.where(WD < 180, WD - 360) # WD relative to North
+        
+        masts_sim[i_sim].wind_speed.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax1,
+                                                                         color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
+        WD.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax2,
+                                                                             color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
+        masts_sim[i_sim].turbulence_intensity.sel(id = mast).interp(height= h).plot(x = 'time', label = sims['Label'][i_sim], ax = ax3,
+                                                                                   color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
+        masts_sim[i_sim].wind_shear.sel(id = mast).plot(x = 'time', label = sims['Label'][i_sim], ax = ax4,
+                                                       color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
     color_events = {'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
     for e in events:
         ax1.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
@@ -259,8 +255,10 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
 
 def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events):
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
+    WD = masts_obs.wind_direction
+    WD = WD.where(WD < 180, WD - 360) # WD relative to North
     masts_obs.wind_speed.sel(id = mast, height = h).plot(x = 'time', hue = 'id', ax = ax1)
-    masts_obs.wind_direction.sel(id = mast, height = h).plot(x = 'time', hue = 'id', ax = ax2)
+    WD.sel(id = mast, height = h).plot(x = 'time', hue = 'id', ax = ax2)
     masts_obs.turbulence_intensity.sel(id = mast, height = h).plot(x = 'time', hue = 'id', ax = ax3)
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', hue = 'id', ax = ax4)
     masts_obs.stability.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax5)
@@ -286,13 +284,38 @@ def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events):
 
 def masts_sims_vs_obs_profiles_plot(event, masts_obs, masts_sim, sims):
     fig, axes = plt.subplots(2,4,figsize = (14,8), sharey = True, sharex = True)
+    fig.suptitle('Vertical profiles for event (' + event[0].strftime("%m/%d/%Y, %H:%M:%S") + ' - ' + event[1].strftime("%m/%d/%Y, %H:%M:%S") + ')', fontsize=12)
     masts = masts_obs.coords['id'].values.tolist()
     for i, mast in enumerate(masts):
         index = np.unravel_index(i,(2,4))
         ax = axes[index]
         for i_sim in range (0,len(masts_sim)):
-            h_sim = masts_sim[i_sim].wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = sims['Label'][i_sim])
+            h_sim = masts_sim[i_sim].wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = sims['Label'][i_sim], color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
         h_obs = masts_obs.wind_speed.sel(time = slice(event[0],event[1]), id = mast).mean(dim = 'time', skipna = True).plot(y = 'height', ax = axes[index], label = 'obs',
+                                                        marker = 'o', linestyle='none', color = 'silver')
+        ax.set_ylabel(''); ax.set_xlabel(''); 
+        ax.set_ylim(1,1000)
+        ax.grid()
+    plt.yscale('symlog')
+    axes[(0,0)].set_ylabel('z [m]'); axes[(1,0)].set_ylabel('z [m]')
+    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
+    axes[(1,3)].axis('off')
+    axes[(1,2)].legend(bbox_to_anchor=(1.13, 1))
+    return axes
+
+def masts_sims_vs_obs_binavrg_profiles_plot(select_bin, masts_obs_mean, masts_sim_mean, sims):
+    fig, axes = plt.subplots(2,4,figsize = (14,8), sharey = True, sharex = True)
+    masts = masts_obs_mean.coords['id'].values.tolist()
+    wd_bin, zL_bin = select_bin
+    fig.suptitle('Bin-averaged vertical profiles for bin (' + wd_bin + ',' + zL_bin + ')', fontsize=12)
+    for i, mast in enumerate(masts):
+        index = np.unravel_index(i,(2,4))
+        ax = axes[index]
+        for i_sim in range (0,len(masts_sim_mean)):
+            h_sim = masts_sim_mean[i_sim].wind_speed.sel(id = mast, wd = wd_bin, zL = zL_bin).plot(y = 'height', ax = axes[index], 
+                                                                                                   label = sims['Label'][i_sim],
+                                                                                                  color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
+        h_obs = masts_obs_mean.wind_speed.sel(id = mast, wd = wd_bin, zL = zL_bin).plot(y = 'height', ax = axes[index], label = 'obs',
                                                         marker = 'o', linestyle='none', color = 'silver')
         ax.set_ylabel(''); ax.set_xlabel(''); 
         ax.set_ylim(1,1000)
