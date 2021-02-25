@@ -9,10 +9,29 @@ import rasterio as rio
 import matplotlib.pyplot as plt 
 from matplotlib.colors import LightSource
 from scipy import stats
+import seaborn as sns
 
 from lib.variables_dictionary.variables import Variables
 from lib.variables_dictionary.variables import nc_global_attributes_from_yaml
 
+def annotate_bars(ax,data,col,color = 'k'):
+    """
+    Add annotations in horizontal bar plots
+    Inputs:
+        - ax: axis handle
+        - data: dataframe with data in bar plot
+        - col: column of dataframe to annotate
+        - color: text color
+    """
+    cnt = 0
+    for index, row in data.iterrows():
+        if row[col]<0: 
+            ha = 'left'
+        else:
+            ha = 'right'
+        ax.text(row[col],cnt+0.25, round(row[col],2), color=color, ha=ha)
+        cnt = cnt + 1
+        
 def read_sim(filename):
     try:
         M = xr.open_dataset(filename)
@@ -124,8 +143,8 @@ def WDzL_bins(x,y,ts,statistic,bins,bins_label,plot = False):
         x[x>WDbins[-1]] = x[x>WDbins[-1]]-360
         y = y.values.flatten()
         statistic, xedges, yedges, binnumber = stats.binned_statistic_2d(x, y, ts.values.flatten(), 
-                                                                        statistic=statistic, 
-                                                                        bins=bins, expand_binnumbers = True)
+                                                                    statistic=statistic, 
+                                                                    bins=bins, expand_binnumbers = True)
         N_WDzL = pd.DataFrame(statistic, index=WDbins_label, columns=zLbins_label)
 
         binmap = np.empty((Nwd, NzL), dtype = object)
