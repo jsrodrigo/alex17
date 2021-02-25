@@ -142,17 +142,25 @@ def WDzL_bins(x,y,ts,statistic,bins,bins_label,plot = False):
         x = x.values.flatten()
         x[x>WDbins[-1]] = x[x>WDbins[-1]]-360
         y = y.values.flatten()
-        statistic, xedges, yedges, binnumber = stats.binned_statistic_2d(x, y, ts.values.flatten(), 
+        if Nwd == 1:
+            statistic, bin_edges, binnumber = stats.binned_statistic(y, ts.values.flatten(), 
+                                                                    statistic=statistic, 
+                                                                    bins=zLbins)
+            N_WDzL = pd.DataFrame(statistic, index=zLbins_label, columns=WDbins_label)
+            binmap = np.empty((Nwd, NzL), dtype = object)
+            for i_zL in range(NzL):
+                binmap[0,i_zL] = ts[binnumber == i_zL+1].time.values
+        else:
+            statistic, xedges, yedges, binnumber = stats.binned_statistic_2d(x, y, ts.values.flatten(), 
                                                                     statistic=statistic, 
                                                                     bins=bins, expand_binnumbers = True)
-        N_WDzL = pd.DataFrame(statistic, index=WDbins_label, columns=zLbins_label)
+            N_WDzL = pd.DataFrame(statistic, index=WDbins_label, columns=zLbins_label)    
+            binmap = np.empty((Nwd, NzL), dtype = object)
+            for i_wd in range(Nwd):
+                for i_zL in range(NzL):
+                    binmap[i_wd,i_zL] = ts[np.logical_and(binnumber[0,:] == i_wd+1, binnumber[1,:] == i_zL+1)].time.values
 
-        binmap = np.empty((Nwd, NzL), dtype = object)
-        for i_wd in range(Nwd):
-            for i_zL in range(NzL):
-                binmap[i_wd,i_zL] = ts[np.logical_and(binnumber[0,:] == i_wd+1, binnumber[1,:] == i_zL+1)].time.values
-
-        if plot:
+        if Nwd > 1 and plot:
             N_zL = np.sum(N_WDzL, axis = 0).rename('pdf')
             N_WD = np.sum(N_WDzL, axis = 1).rename('pdf')
             Nnorm_WDzL = N_WDzL.div(N_WD, axis=0)
