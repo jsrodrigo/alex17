@@ -297,7 +297,7 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
     ax6.grid(); ax6.set_xlabel(''); ax6.set_ylabel(r'wT [$m K s^{-1}$]'); ax6.set_title('')# ax6.set_ylim([-1,1])
     return [ax1, ax2, ax3, ax4, ax5, ax6]
 
-def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events):
+def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, binmap):
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
     WD = masts_obs.wind_direction
     WD = WD.where(WD < 180, WD - 360) # WD relative to North
@@ -307,17 +307,32 @@ def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events):
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', hue = 'id', ax = ax4)
     masts_obs.stability.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax5)
     masts_obs.heat_flux.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax6)
-    color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
-    for e in events:
-        ax1.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax2.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax3.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax4.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax5.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax6.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
+    
+    if binmap.size != 0:
+        color_bins = ['salmon', 'silver', 'lightblue']
+        n_wd, n_zL = binmap.shape
+        for zL in range(n_zL):
+            for b in binmap[0,zL]:
+                ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                
+    if not events:
+        color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
+        for e in events:
+            ax1.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax2.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax3.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax4.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax5.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax6.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            
     ax1.set_xlim([datefrom, dateto])
     #ax1.legend(bbox_to_anchor=(1.13, 1))
-    ax2.get_legend().remove(); ax3.get_legend().remove(); ax4.get_legend().remove(); ax5.get_legend().remove()
+    ax2.get_legend().remove(); ax3.get_legend().remove(); ax4.get_legend().remove(); ax5.get_legend().remove(); ax6.get_legend().remove()
     ax1.grid(); ax1.set_xlabel(''); ax1.set_ylabel(r'wind speed [$m s^{-1}$]')
     ax2.grid(); ax2.set_xlabel(''); ax2.set_ylabel(r'wind direction [º]')
     ax3.grid(); ax3.set_xlabel(''); ax3.set_ylabel(r'turbulence intensity [-]'); ax3.set_ylim([0,0.6])
