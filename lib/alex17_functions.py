@@ -242,7 +242,7 @@ def _l(j):
               ]
     return lspecs[j]
 
-def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events):
+def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events, binmap):
     WD = masts_obs.wind_direction
     WD = WD.where(WD < 180, WD - 360) # WD relative to North
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
@@ -264,14 +264,29 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
                                                                                    color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
         masts_sim[i_sim].wind_shear.sel(id = mast).plot(x = 'time', label = sims['Label'][i_sim], ax = ax4,
                                                        color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
-    color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
-    for e in events:
-        ax1.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax2.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax3.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax4.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax5.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
-        ax6.axvspan(events[e][0], events[e][1], alpha=0.5, color=color_events[e])
+        
+    if binmap.size != 0:
+        color_bins = ['salmon', 'silver', 'lightblue']
+        n_wd, n_zL = binmap.shape
+        for zL in range(n_zL):
+            for b in binmap[0,zL]:
+                ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+
+    if not events:
+        color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
+        for e in events:
+            ax1.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax2.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax3.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax4.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax5.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            ax6.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+                
     ax1.set_xlim([datefrom, dateto])
     ax1.legend(bbox_to_anchor=(1.13, 1)) 
     ax1.grid(); ax1.set_xlabel(''); ax1.set_ylabel(r'S [$m s^{-1}$]'); ax1.set_title("{} ({} m)".format(mast, h))
