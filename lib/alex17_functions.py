@@ -242,7 +242,7 @@ def _l(j):
               ]
     return lspecs[j]
 
-def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events, binmap):
+def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events, binmap, zLbins_label):
     WD = masts_obs.wind_direction
     WD = WD.where(WD < 180, WD - 360) # WD relative to North
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
@@ -264,18 +264,22 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
                                                                                    color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
         masts_sim[i_sim].wind_shear.sel(id = mast).plot(x = 'time', label = sims['Label'][i_sim], ax = ax4,
                                                        color=_l(0)[i_sim], ls=_l(1)[i_sim], lw=_l(2)[i_sim], marker=_l(3)[i_sim])
-        
-    if binmap.size != 0:
-        color_bins = ['salmon', 'silver', 'lightblue']
-        n_wd, n_zL = binmap.shape
+    n_wd, n_zL = binmap.shape  
+    if n_zL > 0:
+        cmap = plt.get_cmap('bwr')
+        zLcolors = np.flipud(cmap(np.linspace(0.,n_zL,n_zL)/n_zL))
+        zLcolors[int((n_zL-1)/2),:] = np.array([0.5,0.5,0.5,1.])     # neutral
         for zL in range(n_zL):
             for b in binmap[0,zL]:
-                ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                if b == binmap[0,zL][0]:
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0, label = zLbins_label[zL]) 
+                else:
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
 
     if not events:
         color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
@@ -297,7 +301,7 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
     ax6.grid(); ax6.set_xlabel(''); ax6.set_ylabel(r'wT [$m K s^{-1}$]'); ax6.set_title('')# ax6.set_ylim([-1,1])
     return [ax1, ax2, ax3, ax4, ax5, ax6]
 
-def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, binmap):
+def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, binmap, zLbins_label):
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
     WD = masts_obs.wind_direction
     WD = WD.where(WD < 180, WD - 360) # WD relative to North
@@ -307,18 +311,23 @@ def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, 
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', hue = 'id', ax = ax4)
     masts_obs.stability.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax5)
     masts_obs.heat_flux.sel(id = mast, height = 10.).plot(x = 'time', hue = 'id', ax = ax6)
-    
-    if binmap.size != 0:
-        color_bins = ['salmon', 'silver', 'lightblue']
-        n_wd, n_zL = binmap.shape
+
+    n_wd, n_zL = binmap.shape  
+    if n_zL > 0:
+        cmap = plt.get_cmap('bwr')
+        zLcolors = np.flipud(cmap(np.linspace(0.,n_zL,n_zL)/n_zL))
+        zLcolors[int((n_zL-1)/2),:] = np.array([0.5,0.5,0.5,1.])     # neutral
         for zL in range(n_zL):
             for b in binmap[0,zL]:
-                ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
-                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=color_bins[zL], linewidth = 0) 
+                if b == binmap[0,zL][0]:
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0, label = zLbins_label[zL]) 
+                else:
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
                 
     if not events:
         color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
