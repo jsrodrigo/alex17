@@ -2,7 +2,6 @@ ID,Plot,Highlight,Ensemble,Save,Participant Number,Participant,Model Name,Input,
 alex17_00a,1,1,0,1,0,CENER,WRF,ERA5,3000,28?,Reference simulation for microscale models,WRF_3km
 alex17_666,1,1,0,1,666,UL Renewables,WRF,ERA5,333,28,Preliminary,WRF_333m
 alex17_69re,1,1,0,1,69,UL Renewables,WRF-LES,ERA5,111,9,Preliminary,WRF-LES_111m
-alex17_44,1,1,0,1,44,Meteodyn,Meteodyn MMC,GFS/FNL,50,20,Preliminary,WRF-MeteodynWT
 alex17_18,1,1,0,1,18,BSC,Alya-RANS,WRF,50,14,Preliminary,WRF-Alya-RANS
 alex17_13,1,1,0,1,18,BSC,Alya-LES,WRF,50,14,Preliminary,WRF-Alya-LES
 alex17_22,1,1,0,1,20,DTU,EllipSys3D,WRF,50?,20?,8x12 TKE_tot,WRF-EllipSys3D_QUICK_8x12_TKE_tot
