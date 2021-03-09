@@ -25,11 +25,7 @@ def annotate_bars(ax,data,col,color = 'k'):
     """
     cnt = 0
     for index, row in data.iterrows():
-        if row[col]<0: 
-            ha = 'left'
-        else:
-            ha = 'right'
-        ax.text(row[col],cnt+0.25, round(row[col],2), color=color, ha=ha)
+        ax.text(max(row[col],0),cnt+0.2, round(row[col],2), color=color, ha='left')
         cnt = cnt + 1
         
 def read_sim(filename):
@@ -245,13 +241,13 @@ def _l(j):
 def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefrom, dateto, events, binmap, zLbins_label):
     WD = masts_obs.wind_direction
     WD = WD.where(WD < 180, WD - 360) # WD relative to North
-    fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
+    fig, (ax1,ax2,ax3,ax4) = plt.subplots(4,1,figsize = (14,10), sharex = True)
     masts_obs.wind_speed.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax1)
     WD.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax2)
     masts_obs.turbulence_intensity.sel(id = mast, height = h).plot(x = 'time', label = 'obs', color = 'k', ax = ax3)
     masts_obs.wind_shear.sel(id = mast).plot(x = 'time', label = 'obs', color = 'k', ax = ax4)
-    masts_obs.stability.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax5)
-    masts_obs.heat_flux.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax6)
+    #masts_obs.stability.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax5)
+    #masts_obs.heat_flux.sel(id = mast, height = 10).plot(x = 'time', label = 'obs', color = 'k', ax = ax6)
     for i_sim in range (0,len(masts_sim)): 
         WD = masts_sim[i_sim].wind_direction
         WD = WD.where(WD < 180, WD - 360) # WD relative to North
@@ -274,12 +270,12 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
                 if b == binmap[0,zL][0]:
                     ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0, label = zLbins_label[zL]) 
                 else:
-                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                #ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                #ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
 
     if not events:
         color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
@@ -288,18 +284,18 @@ def mast_sims_vs_obs_timeseries_plot(mast, h, masts_obs, masts_sim, sims, datefr
             ax2.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
             ax3.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
             ax4.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
-            ax5.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
-            ax6.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            #ax5.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
+            #ax6.axvspan(events[e][0], events[e][1], alpha=0.7, color=color_events[e])
                 
     ax1.set_xlim([datefrom, dateto])
-    ax1.legend(bbox_to_anchor=(1.13, 1)) 
+    ax1.legend(bbox_to_anchor=(1.02, 1)) 
     ax1.grid(); ax1.set_xlabel(''); ax1.set_ylabel(r'S [$m s^{-1}$]'); ax1.set_title("{} ({} m)".format(mast, h))
     ax2.grid(); ax2.set_xlabel(''); ax2.set_ylabel(r'WD [º]'); ax2.set_title('')
-    ax3.grid(); ax3.set_xlabel(''); ax3.set_ylabel(r'TI'); ax3.set_ylim([0,0.7]); ax3.set_title('')
-    ax4.grid(); ax4.set_xlabel(''); ax4.set_ylabel(r'$\alpha (80/40)$'); ax4.set_ylim([-0.5,0.5]); ax4.set_title('')
-    ax5.grid(); ax5.set_xlabel(''); ax5.set_ylabel(r'$z/L$ ($z$=10m)'); ax5.set_ylim([-2,2]); ax5.set_title('')
-    ax6.grid(); ax6.set_xlabel(''); ax6.set_ylabel(r'wT [$m K s^{-1}$]'); ax6.set_title('')# ax6.set_ylim([-1,1])
-    return [ax1, ax2, ax3, ax4, ax5, ax6]
+    ax3.grid(); ax3.set_xlabel(''); ax3.set_ylabel(r'TI'); ax3.set_ylim([0,1.]); ax3.set_title('')
+    ax4.grid(); ax4.set_xlabel(''); ax4.set_ylabel(r'$\alpha (80/40)$'); ax4.set_ylim([-1.,1.2]); ax4.set_title('')
+    #ax5.grid(); ax5.set_xlabel(''); ax5.set_ylabel(r'$z/L$ ($z$=10m)'); ax5.set_ylim([-3,3]); ax5.set_title('')
+    #ax6.grid(); ax6.set_xlabel(''); ax6.set_ylabel(r'wT [$m K s^{-1}$]'); ax6.set_title('')# ax6.set_ylim([-1,1])
+    return [ax1, ax2, ax3, ax4]
 
 def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, binmap, zLbins_label):
     fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(6,1,figsize = (14,14), sharex = True)
@@ -320,14 +316,14 @@ def compare_masts_timeseries_plot(mast, h, masts_obs, datefrom, dateto, events, 
         for zL in range(n_zL):
             for b in binmap[0,zL]:
                 if b == binmap[0,zL][0]:
-                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0, label = zLbins_label[zL]) 
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0, label = zLbins_label[zL]) 
                 else:
-                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
-                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.3, color=zLcolors[zL], linewidth = 0) 
+                    ax1.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax2.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax3.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax4.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax5.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
+                ax6.axvspan(b, b + np.timedelta64(1, 'h'), alpha=0.2, color=zLcolors[zL], linewidth = 0) 
                 
     if not events:
         color_events = {'all': 'None', 'neutral': 'silver', 'unstable': 'salmon','stable': 'lightblue', 'very stable': 'deepskyblue'}
@@ -375,7 +371,7 @@ def masts_sims_vs_obs_binavrg_profiles_plot(select_bin, masts_obs_mean, masts_si
     fig, axes = plt.subplots(2,4,figsize = (14,8), sharey = True, sharex = True)
     masts = masts_obs_mean.coords['id'].values.tolist()
     wd_bin, zL_bin = select_bin
-    fig.suptitle('Bin-averaged vertical profiles for bin (' + wd_bin + ',' + zL_bin + ')', fontsize=12)
+    #fig.suptitle('Bin-averaged vertical profiles for bin (' + wd_bin + ',' + zL_bin + ')', fontsize=12)
     for i, mast in enumerate(masts):
         index = np.unravel_index(i,(2,4))
         ax = axes[index]
@@ -391,8 +387,8 @@ def masts_sims_vs_obs_binavrg_profiles_plot(select_bin, masts_obs_mean, masts_si
         ax.grid()
     plt.yscale('symlog')
     axes[(0,0)].set_ylabel('z [m]'); axes[(1,0)].set_ylabel('z [m]')
-    axes[(1,0)].set_xlabel('wind speed [$m s^{-1}$]'); axes[(1,1)].set_xlabel('wind speed [$m s^{-1}$]'); 
-    axes[(1,2)].set_xlabel('wind speed [$m s^{-1}$]')
+    axes[(1,0)].set_xlabel('S [$m s^{-1}$]'); axes[(1,1)].set_xlabel('S [$m s^{-1}$]'); 
+    axes[(1,2)].set_xlabel('S [$m s^{-1}$]')
     axes[(1,3)].axis('off')
     axes[(1,2)].legend(bbox_to_anchor=(1.13, 1))
     return axes
